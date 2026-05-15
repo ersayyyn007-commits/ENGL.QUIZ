@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Квиз веб-қосымшасы</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --correct: #10b981;
+            --wrong: #ef4444;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        .main-title {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+        }
+
+        .card-num {
+            background: var(--accent-blue);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 20px;
+        }
+
+        .hidden { display: none; }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .timer-box {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--accent-blue);
+            padding: 10px 20px;
+            border-radius: 12px;
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .question-container {
+            background: #1e253a;
+            padding: 40px;
+            border-radius: 24px;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            line-height: 1.5;
+            border: 1px solid var(--border);
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .ans-btn {
+            background: var(--card-bg);
+            border: 2px solid #334155;
+            color: var(--text-main);
+            padding: 22px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            text-align: left;
+            transition: 0.2s;
+        }
+
+        .ans-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+        }
+
+        .correct { border-color: var(--correct) !important; background: rgba(16, 185, 129, 0.1) !important; color: var(--correct); font-weight: bold; }
+        .wrong { border-color: var(--wrong) !important; background: rgba(239, 68, 68, 0.1) !important; color: var(--wrong); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="home-screen">
+        <h1 class="main-title">Квиз веб-қосымшасы</h1>
+        <p class="subtitle">Бөлімді таңдап, сынақты бастаңыз!</p>
+        <div class="category-grid" id="cat-grid"></div>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div class="quiz-header">
+            <div>
+                <p id="cat-label" style="color: var(--accent-blue); margin:0; font-weight:bold;"></p>
+                <p id="q-progress" style="color: var(--text-muted); margin:5px 0 0 0;"></p>
+            </div>
+            <div class="timer-box">⏱ Уақыт: <span id="timer-val">60</span></div>
+        </div>
+
+        <div class="question-container" id="q-text"></div>
+        <div class="answer-grid" id="ans-grid"></div>
+    </div>
+</div>
+
+<script>
+    const questionsDB = {
+        1: [
+            { q: "001. Choose the right variant of Present Continuous. She can’t come to the phone now. She …. a shower", a: ["is having", "has", "will have", "had"], c: "is having" },
+            { q: "002. Choose the right variant of Present Simple. She ______ to the gym three times a week", a: ["goes", "am going", "going is", "go"], c: "goes" },
+            { q: "003. Choose the right variant. Traditional Kazakh … revolves around mutton and horse meat as well as various milk products", a: ["cuisine", "kitchen", "culture", "history"], c: "cuisine" },
+            { q: "004. Choose the right variant. ‘An apple a day keeps the ________ away.’", a: ["doctor", "teacher", "engineer", "pensioner"], c: "doctor" },
+            { q: "005. Choose the right variant in Past Simple. They ___ ________ last year", a: ["got married", "are marrying", "is married", "will get marry"], c: "got married" },
+            { q: "006. Choose the right variant in Past Continuous. Peter picked up the tickets when Sarah __________a siesta", a: ["was having", "had", "will having", "not have"], c: "was having" },
+            { q: "007. Choose the right variant. Football player is in a position to put the ball into the net and score a _____", a: ["goal", "yellow card", "kick", "foul"], c: "goal" },
+            { q: "008. Choose the right variant. I ____ aerobics", a: ["do", "jump", "play", "go"], c: "do" },
+            { q: "009. Choose the right variant. He says he’s got the flu, but it’s really just a cold. He’s _________a lot at night", a: ["coughing", "hearing", "swelling", "itching"], c: "coughing" },
+            { q: "010. Choose the right variant. He’s developed ___________to cats. He starts sneezing as soon as he comes near one", a: ["an allergy", "a cough", "a sprain", "pneumonia"], c: "an allergy" },
+            { q: "011. Choose the right variant. Maria cleaned the kitchen _______ I did the bathroom", a: ["while", "as", "first of all", "eventuality"], c: "while" },
+            { q: "012. Choose the right variant. He opened the door _______I touched the handle", a: ["just as", "finally", "as for", "first of all"], c: "just as" },
+            { q: "013. Choose the correct variant. A: ‘___________?’. B: ‘Tomorrow. My flight is in the morning’", a: ["When are you going to leave?", "When have you been leaving?", "When is you leaving?", "When did you leave?"], c: "When are you going to leave?" },
+            { q: "014. Choose the correct variant. I won’t ______ anybody where you are. I promise you!", a: ["tell", "telling", "speak", "keep"], c: "tell" },
+            { q: "015. Choose the correct variant. I was probably very ………., and in a way selfish, because I did everything myself", a: ["bossy", "cheerful", "lazy", "funny"], c: "bossy" },
+            { q: "016. Choose the correct variant. Your husband’s mother is your …………", a: ["mother-in-law", "sister-in-law", "mother-in-laws", "step mother-in-law"], c: "mother-in-law" },
+            { q: "017. Choose the correct variant. You look as if you … just …up", a: ["have..woken", "has… woken", "had… wake", "have… wakes"], c: "have..woken" },
+            { q: "018. Choose the correct variant: We… each other since we were children", a: ["have known", "known", "have been knowing", "has known"], c: "have known" },
+            { q: "019. Complete the proverb: Money has no …", a: ["smell", "smelling", "taste", "to taste"], c: "smell" },
+            { q: "020. Choose the correct word for the given definition: - to get money after death of a close relative-", a: ["inherit", "borrow", "lend", "give"], c: "inherit" },
+            { q: "021. Choose the right variant. I'm exhausted! I ______ all day", a: ["have been working", "have working", "has been working", "were working"], c: "have been working" },
+            { q: "022. Choose the right variant. I _______ to the music for an hour", a: ["have been listening", "listening", "am listening", "listened"], c: "have been listening" },
+            { q: "023. Choose the right variant. I don't believe it! I missed the last …", a: ["train", "tube", "bicycle", "station"], c: "train" },
+            { q: "024. Choose the right word. Тоnу Russell has had his state of the art mobile phone for only three months", a: ["modern", "old", "beautiful", "smarting"], c: "modern" },
+            { q: "025. Choose the right answer: In the UK travelling by coaches are … than by train", a: ["cheaper", "much more cheaper", "cheap", "the cheapest"], c: "cheaper" },
+            { q: "026. Choose the right answer: Paulo is … student in my group", a: ["the most intelligent", "the more intelligent", "much intelligent", "as intelligent as"], c: "the most intelligent" },
+            { q: "027. Choose the right answer: You need this to travel on a train, bus or a plane", a: ["boarding card/ pass", "reclaim", "baggage reclaim", "aisle"], c: "boarding card/ pass" },
+            { q: "028. Choose the right answer: The snow caused ______all over the city", a: ["traffic jams", "rush hour", "traffic light", "public transport"], c: "traffic jams" },
+            { q: "029. Choose the right answer: The Scots wear ____ on special occasions", a: ["Kilts", "Saree", "Kimono", "Klompen"], c: "Kilts" },
+            { q: "030. Choose the right answer: In Thailand eye contact is avoided as a sign of ________", a: ["respect", "to permission", "working", "to partnershiper"], c: "respect" },
+            { q: "031. Choose the right answer: In Japan you _____present your card with your both hands", a: ["have to", "must to", "to have", "to shouldn’t"], c: "have to" },
+            { q: "032. Choose the right answer: In most Kazakhstan families you _____take off your shoes when entering a house", a: ["should", "must to", "have", "to can’t"], c: "should" },
+            { q: "033. Choose the right answer: ____ people think about themselves and not about other people", a: ["Selfish", "Spoilt", "Jealous", "Moody"], c: "Selfish" },
+            { q: "034. Choose the right answer: My friend is ______. I can trust him", a: ["reliable", "sensitive", "sociable", "talkative"], c: "reliable" },
+            { q: "035. Choose the right answer: They _____ Italian. They are speaking to each other in Spanish", a: ["can’t be", "could", "have to be", "must be"], c: "can’t be" },
+            { q: "036. Choose the right answer: He _____ be over 70. He retired 10 years ago", a: ["must", "can’t", "might not", "have to"], c: "must" },
+            { q: "037. Choose the right answer: In 1957 the writer Hemingway was awarded the Nobel Prize for _________", a: ["Literature", "Artistic", "Science", "history"], c: "Literature" },
+            { q: "038. Choose the right answer: A person who writes about the news in a newspaper or speaks about it on TV", a: ["a reporter", "a librarian", "a politician", "a teacher"], c: "a reporter" },
+            { q: "039. Choose the right answer: If I spoke better English, I _______ get a job in the hotel", a: ["would be able to", "won’t be able to", "was able to", "be able to"], c: "would be able to" },
+            { q: "040. Choose the right answer: They _______ find a flat yet. They are still looking for it", a: ["haven’t been able to", "could", "are able to", "can"], c: "haven’t been able to" },
+            { q: "041. Complete the sentence with the right form of the verb: If I don't pass the exam, I _____ it again in January", a: ["will do", "will be done", "did", "do"], c: "will do" },
+            { q: "042. Choose the right variant. Complete the sentence with the right form of the verb. We _____ an umbrella, if it rains", a: ["will take", "took", "taken", "would take"], c: "will take" },
+            { q: "043. Complete the sentence with the right form of the verb. As soon as he _____, we can have dinner", a: ["comes", "come", "came", "will come"], c: "comes" },
+            { q: "044. Complete the sentence with the right form of the verb. Don't buy it unless you _____ sure you like it", a: ["are", "been", "be", "will be"], c: "are" },
+            { q: "045. Choose the right variant. A tube or passage that takes smoke from a fire up through a building and out through the roof", a: ["chimney", "basement", "terrace", "loft"], c: "chimney" },
+            { q: "046. Choose the right variant. We’d have a dog, if we ________a garden", a: ["had", "have", "had had", "would have"], c: "had" },
+            { q: "047. Give synonym of the following word ‘cosy’", a: ["comfortable", "famous", "interesting", "sunny"], c: "comfortable" },
+            { q: "048. Choose the right variant. I________ married if I were you", a: ["wouldn’t get", "wouldn’t got", "wouldn’t gets", "didn’t get"], c: "wouldn’t get" },
+            { q: "049. Choose the right variant. I _____ badly with my cousin", a: ["get on", "go out", "split up", "go away"], c: "get on" },
+            { q: "050. Choose the right variant. ______________ eat a lot of sweets when you were a child?", a: ["Did you use to", "Do you use to", "Does you use to", "Did she used to"], c: "Did you use to" }
+        ],
+        2: [
+            { q: "051. Give synonym of the following word ‘fancy’", a: ["admire", "hate", "argue", "look"], c: "admire" },
+            { q: "052. Choose the right variant. My sister ______to get up at 6.00 a.m. but she doesn’t do it anymore", a: ["used", "use", "did use", "using"], c: "used" },
+            { q: "053. Choose the right variant. The town only has …. cinemas", a: ["a few", "very little", "little", "very a few"], c: "a few" },
+            { q: "054. Choose the right variant. There aren’t … cafes near here", a: ["any", "much", "some", "plenty"], c: "any" },
+            { q: "055. Choose the right variant. She has…. friends", a: ["a lot of", "lots", "little", "much"], c: "a lot of" },
+            { q: "056. Choose the right variant. Do you want some ice cream?", a: ["Just a little", "Just lots of", "Just many", "Just a few"], c: "Just a little" },
+            { q: "057. Choose the correct variant. This morning I bought … newspaper and … magazine, … newspaper is in my bag but I don't know where I put … magazine", a: ["a, a, the, the", "a, a, the, a", "the, the, the, a", "a, a, a, the"], c: "a, a, the, the" },
+            { q: "058. Choose the correct variant. I saw … accident this morning … car crashed into … tree", a: ["an, a, the", "an, an, the", "an, the, the", "the, the, the"], c: "an, a, the" },
+            { q: "059. Choose the antonym of the word ‘polite’", a: ["rude", "splendid", "glamorous", "alluring"], c: "rude" },
+            { q: "060. Choose an appropriate definition to the word ‘whiff’", a: ["a slight gust or puff of wind, air, vapor, smoke", "air conditioner", "a substance that emits and diffuses a fragrant odor", "a species of matter of definite chemical composition"], c: "a slight gust or puff of wind, air, vapor, smoke" },
+            { q: "061. Choose the correct variant. There is no________ what he is aiming at", a: ["mistake", "mistaking", "to mistake", "mistakes"], c: "mistaking" },
+            { q: "062. Choose the correct variant. I really appreciate your .........", a: ["help", "helping", "helped", "helps"], c: "help" },
+            { q: "063. Choose the word that is different", a: ["jewelry", "contract", "training course", "experience"], c: "jewelry" },
+            { q: "064. Choose the right variant. Who is surveyor?", a: ["a person whose job is to measure and record the details of areas of land", "a person who is skilled in the science of medicine", "a person who cuts people's hair", "a person who compiles and analyzes statistics"], c: "a person whose job is to measure and record the details of areas of land" },
+            { q: "065. Choose the correct variant. Q: He asked me, 'Have you finished reading the newspaper?'", a: ["He asked me if I had finished reading the newspaper", "He asked me if had I finished reading the newspaper", "He asked me if I finished reading the newspaper", "He asked if had I finished reading the newspaper"], c: "He asked me if I had finished reading the newspaper" },
+            { q: "066. Choose the correct variant. Q: She said, 'I really wish I had bought that new car.'", a: ["She told me she really wished she had bought that new car", "She told me she really wished she bought that new car", "She told me she really had wished she had bought that new car", "She told me she really had wishes she had bought that new car"], c: "She told me she really wished she had bought that new car" },
+            { q: "067. Choose the right variant. What is Fairy Tale?", a: ["story about fairies or other magical creatures, usually for children", "the songs, stories, myths handed down by word of mouth", "fiction with strange or otherworldly settings", "verse and rhythmic writing with imagery"], c: "story about fairies or other magical creatures, usually for children" },
+            { q: "068. Choose the word that is different", a: ["history", "monsters", "fairies", "magical creations"], c: "history" },
+            { q: "069. Choose the right variant. The letter … two days ago", a: ["was sent", "be send", "have been sent", "were sent"], c: "was sent" },
+            { q: "070. Choose the right variant. He …. go out after 10 p.m", a: ["isn’t allowed to", "isn’t allowed", "aren’t allowed to", "isn’t allow to"], c: "isn’t allowed to" },
+            { q: "071. Give the synonym to the word ‘environment’", a: ["eco-system", "desert", "natural reserve", "endangered species"], c: "eco-system" },
+            { q: "072. Choose the right translation of the word ‘медуза’", a: ["jellyfish", "squid", "shrimp", "eel"], c: "jellyfish" },
+            { q: "073. Choose the right variant. This is a house … I was born", a: ["where", "which", "who", "what"], c: "where" },
+            { q: "074. Choose the right variant. Talgat Musabayev is a … of Kazakh nation", a: ["hero", "crew member", "spacecraft", "launch"], c: "hero" },
+            { q: "075. Choose the right variant. My younger sister … husband is a pilot lives in Astana", a: ["whose", "that", "which", "who"], c: "whose" },
+            { q: "076. Choose the right definition of the word ‘icon’", a: ["someone who is very famous and who represents a particular idea", "someone who is notorious for his deeds", "someone who wants to be a celebrity", "someone who represents an idea but not well-known"], c: "someone who is very famous and who represents a particular idea" },
+            { q: "077. Choose the right variant. I ________ (not / finish) my homework if you hadn’t helped me", a: ["wouldn’t have finished", "hadn’t finish", "didn’t finish", "wouldn’t finish"], c: "wouldn’t have finished" },
+            { q: "078. Choose the right variant. If she ________ (not / pass) her driving test, she would have been really disappointed", a: ["hadn’t passed", "wouldn’t pass", "hadn’t pass", "didn’t passed"], c: "hadn’t passed" },
+            { q: "079. Choose the right variant. To find a four-leaf ________is to find good luck", a: ["clover", "chamomile", "cactus", "oak"], c: "clover" },
+            { q: "080. Choose the right variant. The horse returned with a ______ of horses", a: ["herd", "group", "flock", "pack"], c: "herd" },
+            { q: "081. Choose the right variant: He hasn`t been to Shanghai before, …?", a: ["has he", "is he", "had he", "was he"], c: "has he" },
+            { q: "082. Choose the right variant: She wasn`t so happy, …?", a: ["was she", "weren't she", "will she", "is she"], c: "was she" },
+            { q: "083. Choose the right variant: If only I ____ how to get there", a: ["knew", "have known", "have been knowing", "to know"], c: "knew" },
+            { q: "084. Choose the right variant: Halloween is traditionally the time when common_______ carry more weight", a: ["superstitions", "resignation", "supervision", "invitation"], c: "superstitions" },
+            { q: "085. Choose the right variant: I wish you _____ so much noise", a: ["wouldn't make", "made", "make", "hadn't make"], c: "wouldn't make" },
+            { q: "086. Choose the right word to the definition: ‘a picture depicting an expanse of scenery’", a: ["landscape", "picture", "portrait", "mountains"], c: "landscape" },
+            { q: "087. Choose the right variant. I’ve no idea …", a: ["whose book it is", "it is whose book", "whose book is it", "it is book whose"], c: "whose book it is" },
+            { q: "088. Choose the right variant. I can’t remember …. or not", a: ["whether I posted your letter", "posted I your letter whether", "whether posted I your letter", "I whether posted your letter"], c: "whether I posted your letter" },
+            { q: "089. Choose the synonym to the word combination “free time”", a: ["spare time", "waste time", "fun time", "entertaining time"], c: "spare time" },
+            { q: "090. Choose the right variant. What does ‘couch potato’ mean?", a: ["a person who has a sedentary lifestyle", "a person who has active lifestyle", "a person who has a lot of hobbies", "a person who has nothing to do"], c: "a person who has a sedentary lifestyle" },
+            { q: "091. Choose the right variant. She’s wearing an ______ flowery cotton blouse", a: ["awful", "beautiful", "smart", "nylon"], c: "awful" },
+            { q: "092. Choose the right variant. Look at that beautiful check ______mini-skirt", a: ["wool", "wooled", "wooly", "wooling"], c: "wool" },
+            { q: "093. Choose the right variant. This is great shiny nylon roll-_______", a: ["neck", "back", "arm", "leg"], c: "neck" },
+            { q: "094. Choose the right synonym to the underlined word. She’s wearing ridiculous tight furry leggings", a: ["absurd", "comfortable", "smart", "great"], c: "absurd" },
+            { q: "095. Choose the right variant. Life was hard for my grandfather’s family, but they managed to ____ by", a: ["get", "write", "speak", "like"], c: "get" },
+            { q: "096. Choose the right variant. We must buy tickets for the concert, because they will be_____ out very quickly", a: ["sold", "sell", "did", "disappear"], c: "sold" },
+            { q: "097. Choose the right variant. Please ____ off the TV and concentrate on your homework", a: ["switch", "down", "play", "gone"], c: "switch" },
+            { q: "098. Choose the right variant. Let’s stay here. I don’t want to ______ into my boss!", a: ["bump", "meet", "like", "jump"], c: "bump" },
+            { q: "099. Choose the right variant: He promised he ________ the new words of the Unit", a: ["would learn", "would have learn", "could learn", "will learn"], c: "would learn" },
+            { q: "100. Choose the right variant: He ______to give you a quiz today, but I’m afraid I’ll get strangled if I do", a: ["was going", "were going", "would", "going to"], c: "was going" }
+        ],
+        3: [
+            { q: "101. Choose the right variant: ‘делать что-либо по привычке’", a: ["do something from mere habit", "force of habit", "get into the habit of doing", "habituality"], c: "do something from mere habit" },
+            { q: "102. Choose the verb: ‘раздражать’", a: ["irritate", "irritating", "irritation", "irritant"], c: "irritate" },
+            { q: "103. Choose the right variant. They agreed _______all their money", a: ["not to spend", "not spending", "has been spending", "is not to spend"], c: "not to spend" },
+            { q: "104. Choose the right variant. Paparazzi means", a: ["a freelance photographer, especially one who takes candid pictures of celebrities for publication", "a person who takes photographs, especially one who practices photography professionally", "a person who practices the occupation or profession of journalism and photographer", "a person employed to gather and report news, as for a newspaper, wire service, or television station"], c: "a freelance photographer, especially one who takes candid pictures of celebrities for publication" },
+            { q: "105. Choose the right variant. I feel like_______ out tonight", a: ["eating", "to eating", "doesn’t eating", "don’t to eat"], c: "eating" },
+            { q: "106. Choose the right variant. Many of the TV programs broadcast with subtitles for …", a: ["the deaf", "the old", "the young", "the teenagers"], c: "the deaf" },
+            { q: "107. Choose the right variant. I_________ become a multi-millionaire by next year", a: ["ll have", "‘ll used to", "'m used to", "‘ll getting"], c: "ll have" },
+            { q: "108. Choose the right variant. I___________ to California by 2027", a: ["‘ll have moved", "‘ll get used", "‘ll used to have", "‘ll have move"], c: "‘ll have moved" },
+            { q: "109. Choose the right variant. Which word doesn’t go with genetic engineering?", a: ["deep space", "human genome", "molecule", "DNA"], c: "deep space" },
+            { q: "110. Choose the right variant. What is futurology?", a: ["a science based on prediction", "one kind of hobby", "a branch of astronomy", "a type of disease"], c: "a science based on prediction" },
+            { q: "111. Choose the correct variant. I want to put _____ _______ as they say it really makes toddlers safer while driving", a: ["child seat", "window frames", "safety pin", "phone card"], c: "child seat" },
+            { q: "112. Choose the correct variant. I worked at night for so long that when I finally started to do some ________, I found it really strange", a: ["day work", "fishing boat", "reading light", "keep in touch"], c: "day work" },
+            { q: "113. Choose the correct variant. Natural ________ is used for cooking and heating homes in our country", a: ["gas", "water", "light", "sewing"], c: "gas" },
+            { q: "114. Choose the correct variant. I hate playing on hard tennis ________- I much prefer grass", a: ["courts", "gold", "steam", "room"], c: "courts" },
+            { q: "115. Choose the correct variant: They export a lot of wine from France", a: ["A lot of wine is exported from France", "A lot of wine was exported from France", "A lot of wine is being exported from France", "A lot of wine have been exported from France"], c: "A lot of wine is exported from France" },
+            { q: "116. Choose the correct variant: You can get married when you are 16", a: ["You are allowed to get married when you are 16", "You are allowed to get married when you 16", "You was allowed get married when you 16", "You have been allowed get married when you 16"], c: "You are allowed to get married when you are 16" },
+            { q: "117. Choose the correct word for the given definition: -someone who thinks about important subjects and develops new ideas", a: ["philosopher", "enlightener", "translator", "composer"], c: "philosopher" },
+            { q: "118. Complete the proverb: Live and …", a: ["learn", "relaxing", "works", "wonders"], c: "learn" },
+            { q: "119. Choose the right variant. When you lived in London, ________ to the theatre very often?", a: ["did you use to go…", "do you go …", "have you go …", "do you usually go …"], c: "did you use to go…" },
+            { q: "120. Choose the right variant. A new friend who you get on with quite well means:", a: ["you have good relationships", "you are indifferent to each other", "don’t care", "hate each other"], c: "you have good relationships" },
+            { q: "121. Fill each gap with appropriate preposition. Do you keep ____touch___old school friends?", a: ["in … with …", "on … to …", "with … of …", "on … for …"], c: "in … with …" },
+            { q: "122. Choose the right variant. There are ___________people in my salsa class", a: ["too many", "too much", "lot", "too very many"], c: "too many" },
+            { q: "123. Choose the right variant. Can you give me ___ lift to ____ station?", a: ["a …", "the …", "a … - …", "the … the …"], c: "a …" },
+            { q: "124. Choose the right variant of the adjective. My friend’s nephew speaks a lot. He is_________", a: ["talkative", "friendly", "shy", "generous"], c: "talkative" },
+            { q: "125. Choose the right variant. He promised______ me back the money", a: ["to pay", "to spend", "to lend", "to borrow"], c: "to pay" },
+            { q: "126. Choose the right variant of Future form for the plans. Where____you____ to go next week?", a: ["are/going", "is/going", "do/go", "did/go"], c: "are/going" },
+            { q: "127. Choose the right variant of Future form. This exercise is difficult. B: I ___you to do it", a: ["will help", "would help", "am helping", "help"], c: "will help" },
+            { q: "128. Choose the right variant of Present Perfect Tense. She_____ to many countries", a: ["has been", "have been", "was", "were"], c: "has been" },
+            { q: "129. Choose the right variant [ _____] the more accurate my answers are", a: ["The more I concentrate", "Most concentrate I", "I am concentrate", "More concentrate I am"], c: "The more I concentrate" },
+            { q: "130. Choose the right variant The [ ____] you have, the more you want", a: ["More", "Most", "Richer", "Intelligent"], c: "More" },
+            { q: "131. Choose the right variant Stop acting [ ____] a fool", a: ["Like", "As liking", "Like as", "As like"], c: "Like" },
+            { q: "132. Choose the right variant. They were late [___] usual", a: ["As", "Like", "As like", "Like as"], c: "As" },
+            { q: "133. Choose the right variant His ringtone sounded [ ____] an alarm", a: ["Like", "As", "Like as", "As like"], c: "Like" },
+            { q: "134. Choose the right variant: The “Great Bear” is a group ________", a: ["of stars", "a river", "Lake", "sea"], c: "of stars" },
+            { q: "135. Give correct definition: If you _____you might find it easier to get to sleep", a: ["turn over", "go turn out", "on turn", "turn in off"], c: "turn over" },
+            { q: "136. Choose the right variant: I knew you___________ to the party", a: ["were going to go", "like to", "has been to", "is going to go"], c: "were going to go" },
+            { q: "137. Choose bad habit:", a: ["smoking", "cooking", "cleaning", "doing sports"], c: "smoking" },
+            { q: "138. Choose the right variant: “насилие”", a: ["violence", "to hook", "midfielder", "to dull"], c: "violence" },
+            { q: "139. Choose the right variant. We often visit our aunt ___________ lives in Norwich __________is in East Anglia", a: ["who,which", "whose,which", "who,where", "whose,where"], c: "who,which" },
+            { q: "140. Choose the correct form. If the ferry crossing hadn’t been so rough, we _________ have had a nice meal", a: ["could", "can", "will be able to", "hadn’t"], c: "could" },
+            { q: "141. Choose the right variant. Among Jewish couples is the_______ of the bride circling her groom seven times under the wedding canopy", a: ["tradition", "to acts", "ruler", "customize"], c: "tradition" },
+            { q: "142. Choose the right variant. A person who helps women to give a birth", a: ["a midwife", "a pregnant", "a nappy", "bride"], c: "a midwife" },
+            { q: "143. Choose the right variant. If you __________more carefully, you would not have had an accident", a: ["had driven", "drove", "have driven", "drive"], c: "had driven" },
+            { q: "144. Choose the correct sentence", a: ["Flying isn’t as comfortable as going by train", "Flying isn’t as more comfortable as going by train", "Flying isn’t as the most comfortable as going by train", "Flying isn’t as like comfortable as going by train"], c: "Flying isn’t as comfortable as going by train" },
+            { q: "145. Complete the sentence. Travelling gives us a good___________to see wonderful monuments, cultural and historical places", a: ["opportunity", "unity", "comfortable", "drive"], c: "opportunity" },
+            { q: "146. Complete the phrase. The flight was…", a: ["delayed", "ake off", "anded", "straight ahead"], c: "delayed" },
+            { q: "147. Complete the sentence. Give the synonym to the “National Identity”", a: ["National originality", "National sovereign", "National nationality", "National local"], c: "National originality" },
+            { q: "148. Choose the correct answer. What does she look like?", a: ["She is tall, slim; she has dark, straight hair", "She likes dancing. She goes to the night club every weekend", "She is smart and neat. Boss likes her attitude to work", "She is bald and her hair is curly. She visits hairstylist once a month"], c: "She is tall, slim; she has dark, straight hair" },
+            { q: "149. Choose the right variant: He’s saving money ….. a new car", a: ["to buy", "buy", "to buying", "to bought"], c: "to buy" },
+            { q: "150. Choose the right variant: It's obvious he's only interested in ….. money", a: ["making", "make", "have make", "to make"], c: "making" }
+        ],
+        4: [
+            { q: "151. Match the definition with their correct adjective: to be able to talk to people easily and share information", a: ["communicative", "experienced", "self-motivated", "hardworking"], c: "communicative" },
+            { q: "152. Choose the right variant: ‘Peter will be back soon,’ Tom said. Tom said that Peter ….. back soon", a: ["would be", "will been", "being", "is being"], c: "would be" },
+            { q: "153. Choose the right variant: Macaulay Culkin ….. 4.5 million dollars for his role in Home Alone in 1990. This was a record for a child at that time", a: ["was paid", "will be paid", "be paid", "pay"], c: "was paid" },
+            { q: "154. Choose the right variant: Fear of black cats comes from _______", a: ["a belief that cats are evil", "a belief cats lived in Great wall of China in Egypt", "cats will come from Egypt", "Norse Mythology about lions"], c: "a belief that cats are evil" },
+            { q: "155. Choose the right answer: What is the “spare time”?", a: ["free time", "waste time", "funny time", "entertaining time"], c: "free time" },
+            { q: "156. Choose the right variant. A person who has a sedentary lifestyle with no or irregular physical activity", a: ["couch potato", "chair man", "couch apple", "sofa tomato"], c: "couch potato" },
+            { q: "157. Choose the right variant. She’s wearing an ______ flowery silk dress", a: ["elegant", "beautiful", "smart", "nylon"], c: "elegant" },
+            { q: "158. Choose the right synonym to the word “ridiculous”", a: ["absurd", "comfortable", "smart", "great"], c: "absurd" },
+            { q: "159. Choose the right variant. A. What kind of food is this? B. I’m not sure. It _____ be Thai or Indonesian, I think", a: ["must", "to can’t", "to mustn’t", "couldn’t"], c: "must" },
+            { q: "160. Choose the right variant. The film _____ in New York", a: ["is set", "set", "is setting", "seted"], c: "is set" },
+            { q: "161. Choose the right variant. She _____ be out. The house is dark and her car’s not there", a: ["must", "might", "ought to", "can"], c: "must" },
+            { q: "162. Choose the right variant. Parts of the Harry Potter films _____ in an Oxford college", a: ["were filmed", "are filmed", "filmed", "were filming"], c: "were filmed" },
+            { q: "163. Choose the right variant. I’m sorry but all the tickets have _____ sold", a: ["been", "be", "being", "was been"], c: "been" },
+            { q: "164. Choose the right variant. He _____ happy. He didn’t get the job he wanted", a: ["can’t be", "can be", "must be", "can’t to be"], c: "can’t be" },
+            { q: "165. Choose the right variant. The film will _____ made in Britain", a: ["be", "been", "have", "has"], c: "be" },
+            { q: "166. Choose the right variant. I _____ study history at university if I get good exam results", a: ["will", "would", "would not", "have"], c: "will" },
+            { q: "167. Choose the right variant. Do you really think you _____ happier if you had more money?", a: ["would be", "will be", "would have", "have been"], c: "would be" },
+            { q: "168. Choose the right variant. The test _____ start until everybody is quiet", a: ["won’t", "will be", "would", "couldn’t"], c: "won’t" },
+            { q: "169. Choose the right variant. Could you phone Adriana before you _____ to lunch, please?", a: ["go", "will go", "went", "gone"], c: "go" },
+            { q: "170. Choose the right variant. If we _____ a lot of money, we’d buy a house in the country", a: ["had", "have", "will have", "would have"], c: "had" },
+            { q: "171. Choose the right variant. The opposite of talkative", a: ["quiet", "impatient", "sociable", "competitive"], c: "quiet" },
+            { q: "172. Choose the right variant. The opposite of honest", a: ["dishonest", "kind", "patient", "shy"], c: "dishonest" },
+            { q: "173. Choose the right variant. Food that isn’t cooked is", a: ["raw", "boiled", "fried", "roasted"], c: "raw" },
+            { q: "174. Choose the right variant. Most jobs need applicants to have certain______", a: ["qualifications", "promotion", "to certificating", "career ladder"], c: "qualifications" },
+            { q: "175. Choose the right variant. To stop working in your early sixties___", a: ["retire", "apply", "resign", "go away"], c: "retire" },
+            { q: "176. Choose the right variant. If you get on well with somebody you might become___", a: ["friends", "single", "enemies", "opponent"], c: "friends" },
+            { q: "177. Choose the right variant. People you go to school with are your___", a: ["classmates", "colleagues", "opponents", "employer"], c: "classmates" },
+            { q: "178. Choose the right variant. The time of day when there is a lot of traffic___", a: ["rush hour", "full hour", "busy hour", "limit hour"], c: "rush hour" },
+            { q: "179. Choose the right variant. Tennis is played on a tennis___", a: ["court", "pitch", "pool", "place"], c: "court" },
+            { q: "180. Choose the right variant. If you _____ me, I would have been in serious trouble", a: ["hadn’t helped", "haven’t helped", "wouldn’t help", "didn’t help"], c: "hadn’t helped" },
+            { q: "181. Choose the right variant. We don’t have _____ shops in our village", a: ["any", "no", "none", "much"], c: "any" },
+            { q: "182. Choose the right variant. Mountain View, _____ Steve Jobs grew up, is in California", a: ["where", "hat", "which", "who"], c: "where" },
+            { q: "183. Choose the right variant. That’s the girl _____ mobile was stolen at school", a: ["whose", "which", "that", "where"], c: "whose" },
+            { q: "184. Choose the right variant. Facebook, _____ was created in 2004, is popular around the world", a: ["which", "who", "whom", "where"], c: "which" },
+            { q: "185. Choose the right variant. The film, _____ was directed by Peter Jackson, was nominated for an Oscar", a: ["which", "what", "who", "whom"], c: "which" },
+            { q: "186. Choose the right variant. If I _____ you, I would look for a better-paid job", a: ["were", "am", "be", "would be"], c: "were" },
+            { q: "187. Choose the right variant. They _____ be French. They’re speaking German", a: ["can’t", "ought to", "should", "may"], c: "can’t" },
+            { q: "188. Choose the right variant. Hello, you must _____ Tania, the new receptionist", a: ["be", "been", "to be", "have been"], c: "be" },
+            { q: "189. Find the missing word. A written legal document about your job", a: ["contract", "certificate", "assignment", "applicants"], c: "contract" },
+            { q: "190. Find the missing word. If you work for yourself, you are________", a: ["self-employed", "unemployed", "non-worker", "trainee"], c: "self-employed" },
+            { q: "191. Find the missing word. If a job only requires a few hours' work each day, it is", a: ["part-time", "full-time", "permanent", "retire"], c: "part-time" },
+            { q: "192. Choose the right variant. The past tense of lose", a: ["lost", "losed", "loseed", "loosen"], c: "lost" },
+            { q: "193. Choose the right variant. The place where you swim", a: ["swimming pool", "court", "pitch", "golf course"], c: "swimming pool" },
+            { q: "194. Choose the right variant. People who watch a sport", a: ["spectators", "players", "teams", "referees"], c: "spectators" },
+            { q: "195. Choose the right variant. Sportspeople have to do this every day", a: ["train", "get injured", "lose", "control"], c: "train" },
+            { q: "196. Choose the right variant. You ____ yoga, tai chi and aerobics", a: ["do", "go", "play", "train"], c: "do" },
+            { q: "197. Choose the right variant. The opposite of mean", a: ["generous", "extrovert", "ambitious", "kind"], c: "generous" },
+            { q: "198. Choose the right variant. The opposite of clever", a: ["stupid", "independent", "hardworking", "spoilt"], c: "stupid" },
+            { q: "199. Choose the right variant. The best player _____ four goals", a: ["scored", "lose", "played", "get"], c: "scored" },
+            { q: "200. Choose the right variant. A person who controls the game in some sports", a: ["referee", "coach", "instructor", "tutor"], c: "referee" }
+        ],
+        5: [
+            { q: "201. Choose the right variant. A person who controls the game in some sports", a: ["referee", "coach", "instructor", "tutor"], c: "referee" },
+            { q: "202. Anna’s in the kitchen. She _____ dinner", a: ["’s cooking", "cooks", "will cook", "cooked"], c: "’s cooking" },
+            { q: "203. Beetroot and cabbage are types of _____", a: ["vegetables", "meat", "fruit", "foods"], c: "vegetables" },
+            { q: "204. We had _____ chicken and vegetables for dinner last night", a: ["grilled", "grill", "grills", "grilling"], c: "grilled" },
+            { q: "205. My parents _____ in China", a: ["were born", "are born", "was born", "were borning"], c: "were born" },
+            { q: "206. Which word has a different sound?", a: ["lane", "tram", "van", "ban"], c: "lane" },
+            { q: "207. Which word has a different sound?", a: ["prawn", "salmon", "crab", "bank"], c: "prawn" },
+            { q: "208. Choose the correct answer. I _____ my wallet when I was on holiday last year", a: ["lost", "’ve lost", "’ve been losing", "losing"], c: "lost" },
+            { q: "209. Choose the correct answer. I _____ to eat fresh vegetables – I don’t like frozen", a: ["prefer", "’m preferring", "prefers", "has preferred"], c: "prefer" },
+            { q: "210. Choose the correct answer. Today most people _____ on junk food", a: ["are cutting down", "is cutting down", "cuts down", "cuts downing"], c: "are cutting down" },
+            { q: "211. Choose the correct answer. Could I _____ £10 until tomorrow, please?", a: ["borrow", "lend", "give", "take"], c: "borrow" },
+            { q: "212. Choose the correct answer. Money which a bank lends you", a: ["Loan", "Lend", "Borrow", "Send"], c: "Loan" },
+            { q: "213. Choose the correct answer. He _____ a lot of money when his grandfather died", a: ["inherited", "been inheriting", "’s inherited", "have inherites"], c: "inherited" },
+            { q: "214. Choose the correct answer. My parents have just finished paying the _____ on their house", a: ["mortgage", "salary", "bill", "inherit"], c: "mortgage" },
+            { q: "215. Choose the correct answer. That’s _____ fantastic dress. Where did you get it?", a: ["A", "the", "––", "An"], c: "A" },
+            { q: "216. Choose the correct answer. He was late because of the road_____", a: ["works", "street", "traffic", "jam"], c: "works" },
+            { q: "217. Choose the correct answer. When was the last time you felt _____ watching a film?", a: ["Bored", "Bore", "Boring", "Bare"], c: "Bored" },
+            { q: "218. Choose the correct answer. I’d love to _____ ride a horse", a: ["be able to", "be possible to", "can", "to can"], c: "be able to" },
+            { q: "219. Choose the correct answer. I _____ play a lot of cricket when I lived in England", a: ["used to", "usually", "use to", "usually use"], c: "used to" },
+            { q: "220. Choose the correct answer. I ------I had told you the truth (yesterday)", a: ["wish", "wished", "could", "would"], c: "wish" },
+            { q: "221. Choose the correct answer. It's my sister's birthday today and she_____a party", a: ["‘s having", "Has", "Having", "Have has"], c: "‘s having" },
+            { q: "222. Choose the correct answer. We_______round to her house at eight o'clock this evening", a: ["Are going", "Go", "Going", "Have were going"], c: "Are going" },
+            { q: "223. Choose the correct answer. She______her birthday, but this one is special because she's thirty!", a: ["Doesn’t usually celebrate", "Isn’t usually celebrating", "Usually not celebrate", "Used to celebrate"], c: "Doesn’t usually celebrate" },
+            { q: "224. Choose the correct answer. How long______here in Seville?", a: ["Have you lived", "Did you live", "Do you live", "Had you live"], c: "Have you lived" },
+            { q: "225. Choose the correct answer. It’s so _____ when you fall over in public!", a: ["embarrassing", "embarrassed", "embarrassement", "embarras"], c: "embarrassing" },
+            { q: "226. Choose the correct answer. We managed to get a _____ to buy a new car", a: ["loan", "cheque", "mortgage", "bill"], c: "loan" },
+            { q: "227. Choose the correct answer. My brother borrowed £10 _____ me last month", a: ["from", "on", "by", "in"], c: "from" },
+            { q: "228. Choose the correct answer. It isn’t a good idea to get _____ debt", a: ["into", "for", "on", "of"], c: "into" },
+            { q: "229. Choose the correct answer. I get very _____ in winter when it’s cold and dark", a: ["depressed", "depressing", "depress", "to depress"], c: "depressed" },
+            { q: "230. Choose the correct answer. My new phone has a _____ mode", a: ["silent", "text", "dial", "divide"], c: "silent" },
+            { q: "231. Choose the correct answer. The opposite of pass an exam", a: ["Fail", "Revise", "Term", "Boarding"], c: "Fail" },
+            { q: "232. Choose the correct answer. School is for children between 11 and 18", a: ["Secondary", "Primary", "Elementary", "Boarding"], c: "Secondary" },
+            { q: "233. Choose the correct answer. Cooked in very hot water", a: ["Boiled", "Grill", "Steam", "Fried"], c: "Boiled" },
+            { q: "234. Choose the correct answer. A healthy way to cook vegetables is to “_______” them", a: ["Steam", "Fried", "Steaming", "Grill"], c: "Steam" },
+            { q: "235. Choose the correct answer. If you like being with people, you are ----", a: ["Sociable", "Aggressive", "Reliable", "Calm"], c: "Sociable" },
+            { q: "236. Choose the correct answer. The colloquial word for friends is", a: ["Mate", "Partner", "Classmate", "Groupmate"], c: "Mate" },
+            { q: "237. Choose the correct answer. If you're not in a relationship, you are ----", a: ["Single", "Only", "Loneliness", "Singularity"], c: "Single" },
+            { q: "238. Choose the correct answer. Before getting married, people usually get -----", a: ["Engaged", "Marry", "Sorry", "Partner"], c: "Engaged" },
+            { q: "239. Choose the correct answer. Similar to a bus but it goes between cities", a: ["Coach", "Couch", "Trolleybus", "Lorry"], c: "Coach" },
+            { q: "240. Choose the correct answer. ‘I can’t stand _______ (hear) celebrities complain about paparazzi", a: ["Hearing", "To hear", "Heard", "To hearing"], c: "Hearing" },
+            { q: "241. Choose the right variant. She can type without looking at the _________", a: ["Keyboard", "Search", "Delete", "Download"], c: "Keyboard" },
+            { q: "242. Choose the right variant. I don’t know the _____ of my name", a: ["meaning", "sign", "feature", "type"], c: "meaning" },
+            { q: "243. Choose the right variant. My daughter hates ______ alone", a: ["playing", "played", "plays", "play"], c: "playing" },
+            { q: "244. Choose the right variant. A: It’s a secret. B: I ____ anyone. I promise", a: ["won’t tell", "tells", "told", "say"], c: "won’t tell" },
+            { q: "245. Choose the right variant. The cars are parked_________ the road", a: ["along", "through", "over", "with"], c: "along" },
+            { q: "246. Choose the right variant. _____ is an animal with a long neck", a: ["giraffe", "wolf", "tiger", "monkey"], c: "giraffe" },
+            { q: "247. Choose the right variant. For more information, please visit our website ______ details are available", a: ["where", "who", "whom", "which"], c: "where" },
+            { q: "248. She couldn't remember _ she put her keys", a: ["where", "how", "what", "when"], c: "where" },
+            { q: "249. Choose the right variant. My friends _____ me ‘Chip’", a: ["call", "find", "ask", "identify"], c: "call" },
+            { q: "250. Choose the right variant. We like _____ lunch in the garden", a: ["having", "has", "o having", "had"], c: "having" }
+        ],
+        6: [
+            { q: "251. Choose the right variant. Fred is ill today. He _____to school", a: ["won't go", "don’t go", "aren’t going", "went"], c: "won't go" },
+            { q: "252. Choose the right variant: I think that good ________ is above wealth", a: ["health", "salary", "job", "trip"], c: "health" },
+            { q: "253. Choose the right variant. If I were an animal, I ______ be a tiger", a: ["would", "had", "will", "have"], c: "would" },
+            { q: "254. Choose the right variant. You don't have to buy books. You can go to the library and ________ books for a specified amount of time.", a: ["borrow", "mediate", "search", "shop"], c: "borrow" },
+            { q: "255. Choose the right variant. The teacher asked, '_____ did you come up with that idea?'", a: ["How", "When", "What", "Where"], c: "How" },
+            { q: "256. Choose the right variant. If we____ our homework, our teacher will be happy", a: ["do", "doesn't do", "wouldn't do", "didn't do"], c: "do" },
+            { q: "257. Choose the right variant. A place where students can read and borrow books", a: ["Library", "classroom", "hall", "canteen"], c: "Library" },
+            { q: "258. Choose the right variant. Anny: _____ do you get to college? Bob: On foot", a: ["How", "When", "What", "Where"], c: "How" },
+            { q: "259. Choose the right variant. They usually______ a holiday at a travel agent’s", a: ["book", "sell", "fill in", "put in"], c: "book" },
+            { q: "260. Choose the right variant. Hannah doesn’t work for anybody- she is _______", a: ["self-employed", "optimist", "government worker", "guest"], c: "self-employed" },
+            { q: "261. Choose the right variant. She is always complaining about her _______. She is often ill", a: ["sickness", "happiness", "success", "luck"], c: "sickness" },
+            { q: "262. Choose the right variant. If I ______ you, I wouldn't tell anybody about this", a: ["were", "am", "will be", "had been"], c: "were" },
+            { q: "263. Choose the right variant. A person who works at a library is called a _________", a: ["librarian", "book keeper", "shop owner", "mortician"], c: "librarian" },
+            { q: "264. I don't understand _ you're saying. Can you explain it again?", a: ["what", "why", "when", "where"], c: "what" },
+            { q: "265. Choose the right variant. ‘I learn English in my free time.’", a: ["When do you learn English?", "Why do you learn English?", "Who do you learn English with?", "How well do you know English?"], c: "When do you learn English?" },
+            { q: "266. Choose the right variant. Find out the odd word", a: ["study", "journey", "voyage", "trip"], c: "study" },
+            { q: "267. Choose the right variant. I don’t like working every day. I want a _____ job", a: ["part time", "full time", "extra", "low -paid"], c: "part time" },
+            { q: "268. Choose the right variant. A babysitter looks _____ the children when their mother is at work", a: ["after", "out", "into", "before"], c: "after" },
+            { q: "269. Choose the right variant. People prepare turkey and puddings on that day", a: ["Thanksgiving day", "Women’s day", "Independence Day", "Valentine’s day"], c: "Thanksgiving day" },
+            { q: "270. Choose the right variant. It’s late. I ______ go now", a: ["must", "had to", "has to", "would"], c: "must" },
+            { q: "271. Sam: _ did you buy for your sister's birthday? Alex: A book she wanted", a: ["What", "When", "How", "Where"], c: "What" },
+            { q: "272. Choose the right variant. He is sleepy. He _____ drink a coffee", a: ["Should", "Cry", "Can’t be", "Hadn’t to"], c: "Should" },
+            { q: "273. Choose the right variant", a: ["Paris is the most beautiful city in Europe", "Paris is the tallest city in Europe", "Paris is the more beautiful city in Europe", "Paris is the most beautifully city in Europe"], c: "Paris is the most beautiful city in Europe" },
+            { q: "274. Choose the right variant. My sister thinks she's ____________ than me, but I don't agree!", a: ["More intelligent", "Intelligent", "An intelligent", "Not intelligent"], c: "More intelligent" },
+            { q: "275. Choose the right variant. Your aunt’s and uncle’s children are ______", a: ["cousins", "nephews", "nieces", "twins"], c: "cousins" },
+            { q: "276. Choose the right variant. I think it_______ rain", a: ["is going to", "to go", "goes to", "have been going"], c: "is going to" },
+            { q: "277. Choose the right variant. You _________ lose a bit of weight. You’re getting fatter", a: ["should", "could to", "may to", "shouldn’t"], c: "should" },
+            { q: "278. Choose the right variant. He fell _____and hurt his leg", a: ["down", "up", "on", "in"], c: "down" },
+            { q: "279. Choose the right variant. Holiday which is celebrated on the 22nd of March", a: ["Nauryz", "Women’s day", "Independence Day", "Easter day"], c: "Nauryz" },
+            { q: "280. Choose the right word to form a collocation: private ______", a: ["school", "goal", "education", "language"], c: "school" },
+            { q: "281. Choose the right variant. Give the form of male ‘niece’", a: ["nephew", "grandson", "stepfather", "uncle"], c: "nephew" },
+            { q: "282. Choose the right variant. Hurry up! We are going ____ late", a: ["to be", "been", "being to", "are"], c: "to be" },
+            { q: "283. Choose the right variant. You _______ play computer games till midnight", a: ["shouldн’t", "ought to", "must", "should to"], c: "shouldн’t" },
+            { q: "284. Choose the right variant. _______ is very bad for our health", a: ["fast food", "dairy products", "porridge", "fish"], c: "fast food" },
+            { q: "285. Choose the right variant. Sue ______ to live in Italy, it’s her dream", a: ["would like", "doesn’t", "want", "would to like"], c: "would like" },
+            { q: "286. Choose the right variant: Have you ….. been to a Zara store?", a: ["ever", "already", "just", "sometimes"], c: "ever" },
+            { q: "287. Choose the right variant. What are the advantages of regular exercise?", a: ["It can improve cardiovascular health, increase energy levels, and enhance mood", "It can lead to a sedentary lifestyle", "It may have negative effects on mental health", "It discourages social interactions"], c: "It can improve cardiovascular health, increase energy levels, and enhance mood" },
+            { q: "288. Choose the right variant. ___ can lead to a more balanced and healthy lifestyle", a: ["Regular exercise", "Watching TV for hours", "Skipping meals regularly", "Excessive caffeine intake"], c: "Regular exercise" },
+            { q: "289. Choose the right variant. You can turn the radio off. I _____ to it", a: ["am not listening", "am listening", "is not listening", "doesn’t listen"], c: "am not listening" },
+            { q: "290. Choose the right variant: Find out the odd word", a: ["books", "TV shows", "cartoons", "channels"], c: "books" },
+            { q: "291. Choose the right variant. I usually ________ formal clothes at work", a: ["wear", "try on", "put off", "take out"], c: "wear" },
+            { q: "292. Choose the right variant. I love all kinds of ________ like milk, yoghurt, kefir and cheese", a: ["dairy products", "fast food", "vegetables", "meat products"], c: "dairy products" },
+            { q: "293. Choose the right variant. I ______to work as a teacher. It’s a stressful job", a: ["wouldn't like", "wants", "would to like", "doesn’t"], c: "wouldn't like" },
+            { q: "294. Choose the word with general meaning: ", a: ["jewelry", "earrings", "necklace", "ring"], c: "jewelry" },
+            { q: "295. Choose the right variant. In this photo my sister ______ a white dress", a: ["is wearing", "wearing", "wear", "are wearing"], c: "is wearing" },
+            { q: "296. Choose the right variant. I really think a lot of our programmes are _______", a: ["entertaining", "tasty", "patient", "heavy"], c: "entertaining" },
+            { q: "297. Choose the right variant. When it’s cold I _________ my leather coat", a: ["put on", "take after", "give up", "get on"], c: "put on" },
+            { q: "298. Choose the right variant. Your father‘s not very fit. He doesn’t do _____exercise", a: ["enough", "not enough", "many", "too many"], c: "enough" },
+            { q: "299. Choose the right variant. _____ is the Queen’s official residence", a: ["Buckingham Palace", "Big Ben", "London eye", "Tower bridge"], c: "Buckingham Palace" },
+            { q: "300. We have got new computer software in our office. I haven’t learnt how ….. it yet", a: ["to use", "to live", "to get", "to tell"], c: "to use" }
+        ]
+    };
+
+    const categories = [
+        { id: 1, name: "1-бөлім (001-050)", desc: "Present шақтары және грамматика." },
+        { id: 2, name: "2-бөлім (051-100)", desc: "Синонимдер, лексика." },
+        { id: 3, name: "3-бөлім (101-150)", desc: "Сөз тіркестері және prepositions." },
+        { id: 4, name: "4-бөлім (151-200)", desc: "Салыстыру, қарама-қарсы сөздер." },
+        { id: 5, name: "5-бөлім (201-250)", desc: "Тағамдар, ақша, қарым-қатынас." },
+        { id: 6, name: "6-бөлім (251-300)", desc: "Грамматика, отбасы және денсаулық." }
+    ];
+
+    let currentQuestions = [];
+    let qIndex = 0;
+    let score = 0;
+    let timerId = null;
+    let timeLeft = 60;
+
+    const catGrid = document.getElementById('cat-grid');
+    categories.forEach(cat => {
+        catGrid.innerHTML += `
+            <div class="card" onclick="startQuiz(${cat.id})">
+                <div class="card-num">${cat.id}</div>
+                <h3>${cat.name}</h3>
+                <p style="color: #8b95b3; font-size: 0.9rem;">${cat.desc}</p>
+            </div>
+        `;
+    });
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function startTimer() {
+        clearInterval(timerId);
+        timeLeft = 60;
+        document.getElementById('timer-val').innerText = timeLeft;
+        timerId = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer-val').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                nextQuestion();
+            }
+        }, 1000);
+    }
+
+    function startQuiz(id) {
+        const data = questionsDB[id] || [];
+        if(data.length === 0) { alert("Бұл бөлімде сұрақ жоқ!"); return; }
+        currentQuestions = shuffle([...data]);
+        qIndex = 0; score = 0;
+        document.getElementById('home-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        document.getElementById('cat-label').innerText = `САНАТ: ${categories[id-1].name}`;
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const qData = currentQuestions[qIndex];
+        document.getElementById('q-text').innerText = qData.q;
+        document.getElementById('q-progress').innerText = `Сұрақ ${qIndex + 1} / ${currentQuestions.length}`;
+        const ansGrid = document.getElementById('ans-grid');
+        ansGrid.innerHTML = '';
+        const shuffledAnswers = shuffle([...qData.a]);
+        shuffledAnswers.forEach(ans => {
+            const btn = document.createElement('button');
+            btn.className = 'ans-btn';
+            btn.innerText = ans;
+            btn.onclick = () => checkAnswer(btn, qData.c);
+            ansGrid.appendChild(btn);
+        });
+        startTimer();
+    }
+
+    function checkAnswer(btn, correct) {
+        clearInterval(timerId);
+        const buttons = document.querySelectorAll('.ans-btn');
+        buttons.forEach(b => {
+            b.disabled = true;
+            if(b.innerText === correct) b.classList.add('correct');
+        });
+
+        if(btn.innerText !== correct) {
+            btn.classList.add('wrong');
+        } else {
+            score++;
+        }
+        setTimeout(nextQuestion, 1500);
+    }
+
+    function nextQuestion() {
+        qIndex++;
+        if(qIndex < currentQuestions.length) {
+            showQuestion();
+        } else {
+            alert(`Аяқталды! Ұпай: ${score} / ${currentQuestions.length}`);
+            location.reload();
+        }
+    }
+</script>
+</body>
+</html>
